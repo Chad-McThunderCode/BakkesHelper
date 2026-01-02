@@ -1,0 +1,109 @@
+#!/bin/bash
+function installBakkes(){
+	# find install dir using protontricks
+	ROCKETDIR="$(protontricks-launch --appid 252950 --no-runtime --cwd-app instdir.sh 2>/dev/null)"
+
+
+	# download, unzip latest BakkesMod
+	wget -q --show-progress https://github.com/bakkesmodorg/BakkesModInjectorCpp/releases/latest/download/BakkesModSetup.zip
+	unzip BakkesModSetup.zip
+
+	# launch installer
+	protontricks-launch --appid 252950 BakkesModSetup.exe 2>/dev/null >/dev/null
+
+
+	# check if installation was successful
+	test -e "$ROCKETDIR/drive_c/Program Files/BakkesMod/BakkesMod.exe"
+	if [ "$?" -gt 0 ]; then
+		echo "ERROR: BakkesMod not installed for unknown reasons. Maybe user cancelled setup?" >&2
+		return 1
+	else
+		echo "BakkesMod installed successfully."
+
+		# update config file tracking installed version
+		echo "$(git ls-remote --heads https://github.com/bakkesmodorg/BakkesModInjectorCpp | grep refs/heads/master | grep -oP "^[^\s]*")" > ~/.config/bakkes/version
+		return 0
+	fi
+}
+
+
+# make sure config directory exists
+mkdir -p ~/.config/bakkes
+
+# temporary working directory
+cd "$(mktemp -d)"
+
+
+# check for dependencies
+which protontricks-launch >/dev/null 2>/dev/null || { echo "ERROR: Install protontricks from your package manager to continue" 1>&2; exit 1; }
+which unzip >/dev/null 2>/dev/null || { echo "ERROR: Install unzip from your package manager to continue" 1>&2; exit 1; }
+which git >/dev/null 2>/dev/null || { echo "ERROR: Install git from your package manager to continue" 1>&2; exit 1; }
+which wget >/dev/null 2>/dev/null || { echo "ERROR: Install wget from your package manager to continue" 1>&2; exit 1; }
+
+
+# Check if Rocky is installed
+if [ -z "$(protontricks -l 2>/dev/null | grep 252950)" ]; then
+	echo "ERROR: Rocket League doesn't seem to be installed (Epic Version? Currently unsupported, sorry!)" 1>&2
+	exit 1
+fi
+
+# Hacky way to find install dir: Create script to be run through protontricks to get the env - is there no better way!?
+cat > instdir.sh << EOF
+#!/bin/bash
+env | grep -oP "(?<=WINEPREFIX=).*"
+EOF
+chmod +x instdir.sh
+ROCKETDIR="$(protontricks-launch --appid 252950 --no-runtime --cwd-app instdir.sh 2>/dev/null)"
+echo RDIR: $ROCKETDIR
+
+
+# Check if BakkesMod is installed and if version matches latest release
+test -e "$ROCKETDIR/drive_c/Program Files/BakkesMod/BakkesMod.exe"
+if [ "$?" -gt 0 ]; then
+	echo BakkesMod not installed, installing now...
+	installBakkes
+	if [ "$?" -gt 0 ]; then
+		echo Exiting.
+		exit 1
+	else
+		echo Success.
+	fi
+else
+	echo Found BakkesMod installation, checking version.
+	BAKKESCURR="$(cat ~/".config/bakkes/version")"
+	BAKKESVER="$(git ls-remote --heads https://github.com/bakkesmodorg/BakkesModInjectorCpp | grep refs/heads/master | grep -oP "^[^\s]*")"
+	echo Remote BakkesMod version: $BAKKESVER
+	echo Current BakkesMod version: $BAKKESCURR
+	if [ "$BAKKESCURR" != "$BAKKESVER" ]; then
+		echo "BakkesMod Version mismatch, reinstalling."
+		installBakkes
+		if [ "$?" -gt 0 ]; then
+			echo Exiting.
+			exit 1
+		else
+			echo Success.
+		fi
+	else
+		echo "BakkesMod up to date."
+	fi
+fi
+
+# Spawn process to wait for user to launch Rocky
+cd "$(mktemp -d)"
+cat > runner.sh << EOF
+#!/bin/bash
+while [ -z "\$(ps -e | grep RocketLeague)" ]; do
+		echo Waiting for user to start RocketLeague	
+		sleep 2
+done
+echo RocketLeague launched
+sleep 20
+protontricks-launch --appid 252950 "$ROCKETDIR/drive_c/Program Files/BakkesMod/BakkesMod.exe" 2>/dev/null >/dev/null &
+while [ ! -z "\$(ps -e | grep RocketLeague)" ]; do
+	echo RocketLeague still running.
+	sleep 10
+done
+pkill -e BakkesMod
+EOF
+chmod +x runner.sh
+./runner.sh &
