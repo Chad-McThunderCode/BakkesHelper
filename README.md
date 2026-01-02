@@ -5,10 +5,10 @@ Bash script to handle installing, updating and running BakkesMod whenever Rocket
 ## Usage
 
 Download this script and add it to Rocket League's Launch Options in Steam:
->"/path/to/BakkesHelper"; %COMMAND%
+    "/path/to/BakkesHelper"; %COMMAND%
 
 You can save this script anywhere, you can clone the repository, it's up to you. I encourage to clone the repository and to add a symlink in your /usr/bin, that way it's available in the PATH, which cleans up the Launch Options:
->"BakkesHelper"; %COMMAND%
+    "BakkesHelper"; %COMMAND%
 
 Note: The semicolon ensures that Rocket League isn't launched until BakkesHelper has checked and, if necessary, installed BakkesMod. It's not strictly necessary.
 
@@ -57,8 +57,8 @@ We use **git** to check the latest commit hash of the official repository to mak
 - If you want to remove BakkesHelper, remember to remove it from the Launch Options
 - If you encounter dependency errors, use your system's Package Manager to install them:
 
-> pacman -S wget protontricks unzip git #Arch-based distros
-> apt-get install wget protontricks unzip git #Ubuntu-based distros
+    pacman -S wget protontricks unzip git #Arch-based distros
+    apt-get install wget protontricks unzip git #Ubuntu-based distros
 
 ## Bugs
 - Probably many. Nothing that should mess up your system, because no system files are targeted. Report them to me.
