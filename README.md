@@ -58,6 +58,7 @@ We use **git** to check the latest commit hash of the official repository to mak
 - If you encounter dependency errors, use your system's Package Manager to install them:
 
     pacman -S wget protontricks unzip git #Arch-based distros
+
     apt-get install wget protontricks unzip git #Ubuntu-based distros
 
 ## Bugs
