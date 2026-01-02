@@ -5,10 +5,22 @@ Bash script to handle installing, updating and running BakkesMod whenever Rocket
 ## Usage
 
 Download this script and add it to Rocket League's Launch Options in Steam:
+
     "/path/to/BakkesHelper"; %COMMAND%
 
 You can save this script anywhere, you can clone the repository, it's up to you. I encourage to clone the repository and to add a symlink in your /usr/bin, that way it's available in the PATH, which cleans up the Launch Options:
+
     "BakkesHelper"; %COMMAND%
+
+To clone this repository, navigate to the directory you want to clone it to, then run:
+
+    git clone https://github.com/Chad-McThunderCode/BakkesHelper
+
+To make a symlink in /usr/bin to BakkesHelper, enter the BakkesHelper directory, then run:
+
+    ln -s "$(pwd)/BakkesHelper" "/usr/bin/BakkesHelper"
+
+*Note that creating files in your /usr/bin directory requires root privileges, but BakkesHelper does not.*
 
 Note: The semicolon ensures that Rocket League isn't launched until BakkesHelper has checked and, if necessary, installed BakkesMod. It's not strictly necessary.
 
@@ -21,27 +33,29 @@ If BakkesMod is not installed already, or if it has to be updated, the user has 
 ## Dependencies
 
 - wget
-- protontricks
+- protontricks **SEE NOTE IN NEXT PARAGRAPH**
 - unzip
 - git
 
 ### Why are these dependencies necessary?
 
-We use **protontricks** to run BakkesMod on Rocket League's Proton prefix.
-We use **wget** and **unzip** to download and unpack BakkesMod's latest release from the official repository: https://github.com/bakkesmodorg/BakkesModInjectorCpp/releases
+We use **protontricks** to run BakkesMod on Rocket League's Proton prefix. **NOTE TO SELF: UPDATE GUIDE, BECAUSE PROTONTRICKS IS NOT IN THE OFFICIAL REPOS**
+
+We use **wget** and **unzip** to download and unpack BakkesMod's latest release from the official repository: https://github.com/bakkesmodorg/BakkesModInjectorCpp/releases.
+
 We use **git** to check the latest commit hash of the official repository to make sure BakkesMod is up to date, or to reinstall it. It would be preferable to rely on BakkesMod's internal updating procedure, but we did not want to meddle with neither BakkesMod nor RocketLeague.
 
 ## What BakkesHelper does
 
 - It runs **my** code on **your** computer. Always be aware of that and check the source code. I've tried to make it self-explanatory, it doesn't require elevated privileges, it doesn't require extraordinary dependencies, but it's still code from the internet.
-- It creates a config directory at ~/.config/bakkes to store the installed BakkesMod version, the version is the latest commit hash.
+- It creates a config directory at ~/.config/bakkes to store the installed BakkesMod version, the version is the latest commit hash
 - It creates a temporary working directory in /tmp on every launch
 - It checks for the required dependencies and may error out, telling the user to install what's missing
 - It uses **protontricks** to see if Rocket League is installed
 - It uses **protontricks** to run a small script inside the Proton prefix to extract the WINEPREFIX directory
 - It checks if BakkesMod is installed, then compares the installed version to the latest version using **git**
 - If BakkesMod is not installed or if the version doesn't match the latest, it will download BakkesMod using **wget**, unpack it into the temporary working directory using **unzip**, and then run it on the Proton prefix - here, the user is supposed to follow the install instructions
-- Once the installation is complete, and on every launch after that where installing isn't necessary, BakkesHelper will wait for Rocket League to be launched, then launch BakkesMod and wait for Rocket League to be closed, then close BakkesMod and exit.
+- Once the installation is complete, and on every launch after that where installing isn't necessary, BakkesHelper will wait for Rocket League to be launched, then launch BakkesMod and wait for Rocket League to be closed, then close BakkesMod and exit
 
 ## What BakkesHelper does not
 - It **does not support Epic Games**, sorry. It *might* in the future, but not for now.
@@ -50,18 +64,34 @@ We use **git** to check the latest commit hash of the official repository to mak
 - It does not run on startup, only when Rocket League is launched (though it might crash and stay open, my bad?)
 
 ## Troubleshooting
-- BakkesHelper logs to Steam's stderr, so if you need to troubleshoot, close Steam, run it from a terminal and keep the terminal open
+- BakkesHelper logs to Steam's stdout, so if you need to troubleshoot, close Steam, run it from a terminal and keep the terminal open
 - If the install gets messed up, you can always delete the file ~/.config/bakkes/version, the version check will then fail and BakkesHelper will download and run the setup on the next launch
 - /path/to/BakkesHelper is not a real path, replace it with the actual absolute path to it in the Launch Options, just to be clear
 - If Rocket League crashes, try injecting at a later point after launching
 - If you want to remove BakkesHelper, remember to remove it from the Launch Options
 - If you encounter dependency errors, use your system's Package Manager to install them:
-
-    pacman -S wget protontricks unzip git #Arch-based distros
-
-    apt-get install wget protontricks unzip git #Ubuntu-based distros
+  
+  Arch-Linux:
+  
+        pacman -S wget protontricks unzip git #Arch-based distros
+  Ubuntu:
+  
+        apt-get install wget protontricks unzip git #Ubuntu-based distros
 
 ## Bugs
 - Probably many. Nothing that should mess up your system, because no system files are targeted. Report them to me.
 - Rocket League will launch even after the setup is cancelled or BakkesHelper crashes, that's intended behavior even if it feels odd. You can still play without BakkesMod, after all.
 - I haven't yet investigated how BakkesMod stores its plugins. I expect all plugins to be destroyed when it BakkesHelper reinstalls it, though the BakkesMod install directory is never actually deleted, it's passed - as it exists - to the BakkesMod setup. I'll get to it, eventually. It would probably have taken less time than to write this README, but, as the Germans say, **"Einen Tod muss man sterben."**
+
+## I don't trust you, can't I do this manually? -Of course!
+You can download the latest release of BakkesMod from the official website/repository, unpack it and use protontricks yourself to first install and later run BakkesMod. All you need is to install protontricks (and anything to unpack a *zip file, which most desktop environments and/or file browsers already ship with anyways).
+
+Run the installer first, it will default to installing in the correct prefix under *drive_c/Program Files/BakkesMod*:
+
+    protontricks-launch --appid 252950 /path/to/BakkesModSetup.exe
+    
+Now, run the same command again, except targeting the installed BakkesMod.exe instead of the setup:
+
+    protontricks-launch --appid 252950 /path/to/pfx/drive_c/Program\ Files/BakkesMod/BakkesMod.exe
+    
+Launch Rocket League, wait for BakkesMod to detect it (and for your game to have properly loaded!) and inject it.
