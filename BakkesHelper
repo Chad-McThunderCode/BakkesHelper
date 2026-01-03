@@ -1,48 +1,11 @@
 #!/bin/bash
-function findWine(){
-	echo "BakkesHelper: Locating Proton wine executable" >&2
-	ret="$(cat "$COMPATDIR/config_info" 2>/dev/null | head -2 | tail -1 | sed -s "s@/share/fonts/@@")"
-	echo BakkesHelper: ret: $ret >&2
-	#ret="$(cat "$COMPATDIR/config_info" 2>/dev/null | head -2 | tail -1 | grep -o ".*compatibilitytools.d/[^/]*" | head -1)"
-	if [ -z "$ret" ]; then
-		echo "BakkesHelper: ERROR: Could not locate Proton wine executable." >&2
-		exit 1
-	fi
-	test -f "$ret/bin/wine"
-	if [ "$?" -gt 0 ]; then
-		echo "BakkesHelper: ERROR: No wine executable found at path specified in $COMPATDIR/config_info" >&2
-		exit 1
-	fi
-	echo "$ret/bin/wine"
-}
-
-
-
-function findCompatDir(){
-	echo "BakkesHelper: Locating RocketLeague prefix" >&2
-
-
-	# check all steam library directories mentioned in libraryfolders.vdf for Rocket League prefix, return the first instance found or error out
-	while read -r path; do
-		test -d "$path/steamapps/compatdata/252950/pfx"
-		if [ "$?" -eq 0 ]; then
-			echo "$path/steamapps/compatdata/252950"
-			return 0
-		fi
-	done < <(cat ~/".steam/root/steamapps/libraryfolders.vdf" | grep "\"path\"" | grep -oP "[^\s]*$" | sed -s "s/\"//g")
-	echo "BakkesHelper: No Rocket League installation found." >&2
-	exit 1
-}
-
-
-
 function installBakkes(){
 	# download, unzip latest BakkesMod
 	wget -q --show-progress https://github.com/bakkesmodorg/BakkesModInjectorCpp/releases/latest/download/BakkesModSetup.zip
 	unzip BakkesModSetup.zip
 
 	# launch installer
-	WINEPREFIX="$ROCKETDIR" "$ROCKETWINE" "BakkesModSetup.exe"
+	WINEPREFIX="$ROCKETDIR" WINEFSYNC="$ROCKETWINE" "BakkesModSetup.exe"
 
 	# check if installation was successful
 	test -e "$ROCKETDIR/drive_c/Program Files/BakkesMod/BakkesMod.exe"
@@ -60,8 +23,23 @@ function installBakkes(){
 }
 
 
+
+# If no injection delay is specified, default to 20 seconds
+if [ -z "$INJECT_DELAY" ]; then
+	INJECT_DELAY=20
+fi
+
+
+
+# In case the runner is still waiting for launch, kill it
+pkill -e "BakkesHelperDaemon.sh"
+
+
+
 # make sure config directory exists
 mkdir -p ~/.config/bakkes
+
+
 
 # temporary working directory
 cd "$(mktemp -d)"
@@ -74,23 +52,22 @@ which wget >/dev/null 2>/dev/null || { echo "BakkesHelper: ERROR: Install wget f
 
 
 
-# Find Rocket League prefix
-COMPATDIR="$(findCompatDir)"
-if [ "$?" -gt 0 ]; then
+# Extract directories from env
+COMPATDIR="$(echo "$STEAM_COMPAT_TOOL_PATHS" | grep -oP "^[^:]*")"
+if [ -z "$COMPATDIR" ]; then
+	echo "BakkesHelper: ERROR: Could not extract proton path" >&2
 	exit 1
 fi
-ROCKETDIR="$COMPATDIR/pfx"
-echo "BakkesHelper: CDIR: $COMPATDIR" >&2
-echo "BakkesHelper: RDIR: $ROCKETDIR" >&2
-
-
-
-# Find Proton wine executable
-ROCKETWINE="$(findWine)"
-if [ "$?" -gt 0 ]; then
+ROCKETWINE="$COMPATDIR/files/bin/wine"
+ROCKETDIR="$(echo "$STEAM_COMPAT_DATA_PATH/pfx")"
+if [ -z "$ROCKETDIR" ]; then
+	echo "BakkesHelper: ERROR: Could not extract Rocket League prefix path" >&2
 	exit 1
 fi
-echo "BakkesHelper: RWINE: $ROCKETWINE" >&2
+echo "BakkesHelper: COMPATDIR: $COMPATDIR" >&2
+echo "BakkesHelper: ROCKETDIR: $ROCKETDIR" >&2
+echo "BakkesHelper: ROCKETWINE: $ROCKETWINE" >&2
+
 
 
 # Check if BakkesMod is installed and if version matches latest release
@@ -137,17 +114,18 @@ else
 	fi
 fi
 
-# Spawn process to wait for user to launch Rocky
-cd "$(mktemp -d)"
-cat > runner.sh << EOF
+
+
+# Spawn process to wait for Rocket League to launch
+cat > BakkesHelperDaemon.sh << EOF
 #!/bin/bash
 while [ -z "\$(ps -e | grep RocketLeague)" ]; do
 		echo "BakkesHelper: Waiting for user to start RocketLeague" >&2
 		sleep 2
 done
 echo "BakkesHelper: RocketLeague launched" >&2
-sleep 20
-WINEPREFIX="$ROCKETDIR" "$ROCKETWINE" "$ROCKETDIR/drive_c/Program Files/BakkesMod/BakkesMod.exe" &
+sleep $INJECT_DELAY
+WINEPREFIX="$ROCKETDIR" WINEFSYNC=1 "$ROCKETWINE" "$ROCKETDIR/drive_c/Program Files/BakkesMod/BakkesMod.exe" &
 while [ ! -z "\$(ps -e | grep RocketLeague)" ]; do
 	echo "BakkesHelper: RocketLeague still running." >&2
 	sleep 10
@@ -155,5 +133,5 @@ done
 echo "BakkesHelper: Rocket League close, shutting down." >&2
 pkill -e BakkesMod
 EOF
-chmod +x runner.sh
-./runner.sh &
+chmod +x BakkesHelperDaemon.sh
+./BakkesHelperDaemon.sh &
