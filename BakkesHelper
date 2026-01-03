@@ -70,7 +70,7 @@ echo "BakkesHelper: ROCKETWINE: $ROCKETWINE" >&2
 
 
 
-# Check if BakkesMod is installed and if version matches latest release
+# Check latest BakkesMod version in the repos and get the currently installed version
 BAKKESCURR="$(cat ~/".config/bakkes/version")"
 BAKKESVER="$(LD_PRELOAD="" LD_LIBRARY_PATH="" git ls-remote --heads "https://github.com/bakkesmodorg/BakkesModInjectorCpp" | grep "refs/heads/master" | grep -oP "^[^\s]*")"
 attempts=5
@@ -86,15 +86,19 @@ while [ -z "$BAKKESVER" ]; do
 	fi
 	BAKKESVER="$(LD_PRELOAD="" LD_LIBRARY_PATH="" git ls-remote --heads "https://github.com/bakkesmodorg/BakkesModInjectorCpp" | grep "refs/heads/master" | grep -oP "^[^\s]*")"
 done
+
+
+
+# Check if BakkesMod is actually installed and recent, otherwise download and run setup
 test -e "$ROCKETDIR/drive_c/Program Files/BakkesMod/BakkesMod.exe"
 if [ "$?" -gt 0 ]; then
 	echo "BakkesHelper: BakkesMod not installed, installing now..." >&2
 	installBakkes
 	if [ "$?" -gt 0 ]; then
-		echo Exiting.
+		echo "Exiting." >&2
 		exit 1
 	else
-		echo Success.
+		echo "Success." >&2
 	fi
 else
 	echo "BakkesHelper: Found BakkesMod installation, checking version." >&2
