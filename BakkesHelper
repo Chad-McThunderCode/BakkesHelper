@@ -1,9 +1,20 @@
 #!/bin/bash
+function findPrefix(){
+	echo Locating RocketLeague prefix >&2
+
+
+	# check all steam library directories mentioned in libraryfolders.vdf for Rocket League prefix, return the first instance found or error out
+	while read -r path; do
+		test -d "$path/steamapps/compatdata/252950/pfx"
+		if [ "$?" -eq 0 ]; then
+			echo "$path/steamapps/compatdata/252950/pfx"
+			return 0
+		fi
+	done < <(cat ~/".steam/root/steamapps/libraryfolders.vdf" | grep "\"path\"" | grep -oP "[^\s]*$" | sed -s "s/\"//g")
+	echo "No Rocket League installation found." >&2
+	exit 1
+}
 function installBakkes(){
-	# find install dir using protontricks
-	ROCKETDIR="$(protontricks-launch --appid 252950 --no-runtime --cwd-app instdir.sh 2>/dev/null)"
-
-
 	# download, unzip latest BakkesMod
 	wget -q --show-progress https://github.com/bakkesmodorg/BakkesModInjectorCpp/releases/latest/download/BakkesModSetup.zip
 	unzip BakkesModSetup.zip
@@ -35,26 +46,19 @@ cd "$(mktemp -d)"
 
 
 # check for dependencies
-which protontricks-launch >/dev/null 2>/dev/null || { echo "ERROR: Install protontricks from your package manager to continue" 1>&2; exit 1; }
 which unzip >/dev/null 2>/dev/null || { echo "ERROR: Install unzip from your package manager to continue" 1>&2; exit 1; }
 which git >/dev/null 2>/dev/null || { echo "ERROR: Install git from your package manager to continue" 1>&2; exit 1; }
 which wget >/dev/null 2>/dev/null || { echo "ERROR: Install wget from your package manager to continue" 1>&2; exit 1; }
 
 
-# Check if Rocky is installed
-if [ -z "$(protontricks -l 2>/dev/null | grep 252950)" ]; then
-	echo "ERROR: Rocket League doesn't seem to be installed (Epic Version? Currently unsupported, sorry!)" 1>&2
+
+# Find Rocket League prefix
+ROCKETDIR="$(findPrefix)"
+if [ "$?" -gt 0 ]; then
 	exit 1
 fi
-
-# Hacky way to find install dir: Create script to be run through protontricks to get the env - is there no better way!?
-cat > instdir.sh << EOF
-#!/bin/bash
-env | grep -oP "(?<=WINEPREFIX=).*"
-EOF
-chmod +x instdir.sh
-ROCKETDIR="$(protontricks-launch --appid 252950 --no-runtime --cwd-app instdir.sh 2>/dev/null)"
 echo RDIR: $ROCKETDIR
+exit 100
 
 
 # Check if BakkesMod is installed and if version matches latest release
