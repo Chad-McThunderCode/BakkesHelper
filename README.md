@@ -69,7 +69,7 @@ We use **git** to check the latest commit hash of the official repository to mak
 - If the install gets messed up, you can always delete the file ~/.config/bakkes/version, the version check will then fail and BakkesHelper will download and run the setup on the next launch
 - /path/to/BakkesHelper is not a real path, replace it with the actual absolute path to it in the Launch Options, just to be clear - or create the symlink as outlined above
 - If Rocket League crashes, try injecting at a later point after launching
-- If BakkesHelper malfunctions, chances are the runner.sh process is still active - use pkill -e runner.sh, htop or any other method to remove it
+- If BakkesHelper malfunctions, chances are the BakkesHelperDaemon.sh process is still active - use pkill -e BakkesHelperDae, htop or any other method to remove it
 - If you want to remove BakkesHelper, remember to remove it from the Launch Options as well
 - If you encounter dependency errors, use your system's Package Manager to install them:
   

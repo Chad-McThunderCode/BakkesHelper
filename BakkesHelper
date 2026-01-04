@@ -5,7 +5,7 @@ function installBakkes(){
 	unzip BakkesModSetup.zip
 
 	# launch installer
-	WINEPREFIX="$ROCKETDIR" WINEFSYNC="$ROCKETWINE" "BakkesModSetup.exe"
+	WINEPREFIX="$ROCKETDIR" WINEFSYNC=1 "$ROCKETWINE" "BakkesModSetup.exe"
 
 	# check if installation was successful
 	test -e "$ROCKETDIR/drive_c/Program Files/BakkesMod/BakkesMod.exe"
