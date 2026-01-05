@@ -2,6 +2,8 @@
 
 Bash script to handle installing, updating and running BakkesMod whenever Rocket League is started.
 
+*Note: Doesn't support Epic Games, doesn't support flatpak Steam*
+
 ## Usage
 
 Download this script and add it to Rocket League's Launch Options in Steam:
@@ -60,6 +62,7 @@ We use **git** to check the latest commit hash of the official repository to mak
 
 ## What BakkesHelper does not
 - It **does not support Epic Games**, sorry. It *might* in the future, but not for now.
+- It **does not support flatpak Steam**, sorry. It *might* in the future, but not for now. Untested: Allowing access to /usr/bin *potentially* solves this.
 - It does not modify BakkesMod or Rocket League and hence,
 - it does not automate the setup itself, nor does it use BakkesMod's internal updating procedure
 - It does not run on startup, only when Rocket League is launched (though it might crash and stay open, my bad?)
